@@ -202,7 +202,8 @@ static int _send_data(const char *data)
 
 	if (curl_handle) {
 		char *url = xstrdup(influxdb_conf.host);
-		xstrfmtcat(url, "/write?db=%s&rp=default&precision=s",influxdb_conf.database);
+		xstrfmtcat(url, "/write?db=%s&rp=default&precision=s",
+				influxdb_conf.database);
 
 		chunk.message = xmalloc(1);
 		chunk.size = 0;
@@ -237,13 +238,21 @@ static int _send_data(const char *data)
 					(void)  strtok(NULL, " ");
 					token = strtok(NULL, " ");
 				}
-				if ((xstrcmp(token, "200") != 0)
-						&& (xstrcmp(token, "204") != 0)) {
+				else if ((xstrcmp(token, "400") == 0)) {
+					debug("400: Bad Request");
+					rc = SLURM_ERROR;
+				}
+				else if ((xstrcmp(token, "404") == 0)) {
+					debug("404: Unacceptable request");
+					rc = SLURM_ERROR;
+				}
+				else if ((xstrcmp(token, "500") == 0)) {
+					debug("500: Internal Server Error");
+					rc = SLURM_ERROR;
+				}
+				else if (xstrcmp(token, "204") != 0) {
 					debug("HTTP status code %s received "
 							"from %s", token, url);
-					debug("Check whether index writes and "
-							"metadata changes are enabled on"
-							" %s", url);
 					debug3("HTTP Response:\n%s", response);
 					rc = SLURM_ERROR;
 				} else {
@@ -262,7 +271,7 @@ static int _send_data(const char *data)
 		if (((error_cnt++) % 100) == 0) {
 			/* Periodically log errors */
 			info("%s: Unable to push data, some data may be lost."
-					"Error count: %d ",plugin_type, error_cnt);
+				"Error count: %d ",plugin_type, error_cnt);
 		}
 	}
 
@@ -320,23 +329,27 @@ extern void acct_gather_profile_p_conf_set(s_p_hashtbl_t *tbl)
 	if (tbl) {
 		s_p_get_string(&influxdb_conf.host, "ProfileInfluxDBHost", tbl);
 		if (s_p_get_string(&tmp, "ProfileInfluxDBDefault", tbl)) {
-			influxdb_conf.def = acct_gather_profile_from_string(tmp);
+			influxdb_conf.def = 
+				acct_gather_profile_from_string(tmp);
 			if (influxdb_conf.def == ACCT_GATHER_PROFILE_NOT_SET) {
 				fatal("ProfileInfluxDBDefault can not be "
-						"set to %s, please specify a valid "
-						"option", tmp);
+					"set to %s, please specify a valid "
+					"option", tmp);
 			}
 			xfree(tmp);
 		}
-		s_p_get_string(&influxdb_conf.database, "ProfileInfluxDBDatabase", tbl);
+		s_p_get_string(&influxdb_conf.database, 
+				"ProfileInfluxDBDatabase", tbl);
 	}
 
 	if (!influxdb_conf.host)
 		fatal("No ProfileInfluxDBHost in your acct_gather.conf file.  "
-				"This is required to use the %s plugin", plugin_type);
+				"This is required to use the %s plugin", 
+				plugin_type);
 	if (!influxdb_conf.database)
-		fatal("No ProfileInfluxDBDatabase in your acct_gather.conf file.  "
-				"This is required to use the %s plugin", plugin_type);
+		fatal("No ProfileInfluxDBDatabase in your acct_gather.conf "
+				"file.  This is required to use the %s plugin",
+			       	plugin_type);
 
 	debug("%s loaded", plugin_name);
 }
@@ -430,7 +443,8 @@ extern int acct_gather_profile_p_create_group(const char* name)
 }
 
 extern int acct_gather_profile_p_create_dataset(
-		const char* name, int parent, acct_gather_profile_dataset_t *dataset)
+		const char* name, int parent, 
+		acct_gather_profile_dataset_t *dataset)
 {
 	table_t * table;
 	acct_gather_profile_dataset_t *dataset_loc = dataset;
@@ -451,15 +465,19 @@ extern int acct_gather_profile_p_create_dataset(
 	table->name = xstrdup(name);
 	table->size = 0;
 	while (dataset_loc && (dataset_loc->type != PROFILE_FIELD_NOT_SET)) {
-		table->names = xrealloc(table->names, (table->size+1) * sizeof(char *));
-		table->types = xrealloc(table->types, (table->size+1) * sizeof(char *));
+		table->names = xrealloc(table->names, 
+				(table->size+1) * sizeof(char *));
+		table->types = xrealloc(table->types, 
+				(table->size+1) * sizeof(char *));
 		(table->names)[table->size] = xstrdup(dataset_loc->name);
 		switch (dataset_loc->type) {
 			case PROFILE_FIELD_UINT64:
-				table->types[table->size] = PROFILE_FIELD_UINT64;
+				table->types[table->size] = 
+					PROFILE_FIELD_UINT64;
 				break;
 			case PROFILE_FIELD_DOUBLE:
-				table->types[table->size] = PROFILE_FIELD_DOUBLE;
+				table->types[table->size] = 
+					PROFILE_FIELD_DOUBLE;
 				break;
 			case PROFILE_FIELD_NOT_SET:
 				break;
@@ -489,10 +507,23 @@ extern int acct_gather_profile_p_add_sample_data(int table_id, void *data,
 	for(;i<table->size;i++){
 		switch (table->types[i]) {
 			case PROFILE_FIELD_UINT64:
-				xstrfmtcat(str,"%s,job=%d,step=%d,task=%s,host=%s value=%"PRIu64" %"PRIu64"\n",table->names[i],g_job->jobid,g_job->stepid,table->name,g_job->node_name,((union data_t*)data)[i].u,sample_time);
+				xstrfmtcat(str,"%s,job=%d,step=%d,task=%s,"
+						"host=%s value=%"PRIu64" "
+						"%"PRIu64"\n",
+						table->names[i],g_job->jobid,
+						g_job->stepid,table->name,
+						g_job->node_name,
+						((union data_t*)data)[i].u,
+						sample_time);
 				break;
 			case PROFILE_FIELD_DOUBLE:
-				xstrfmtcat(str,"%s,job=%d,step=%d,task=%s,host=%s value=%.2f %"PRIu64"\n",table->names[i], g_job->jobid,g_job->stepid,table->name,g_job->node_name,((union data_t*)data)[i].d,sample_time);
+				xstrfmtcat(str,"%s,job=%d,step=%d,task=%s,"
+						"host=%s value=%.2f %"PRIu64""
+						"\n",table->names[i], 
+						g_job->jobid,g_job->stepid,
+						table->name,g_job->node_name,
+						((union data_t*)data)[i].d,
+						sample_time);
 				break;
 			case PROFILE_FIELD_NOT_SET:
 				break;
@@ -528,7 +559,8 @@ extern void acct_gather_profile_p_conf_values(List *data)
 
 	key_pair = xmalloc(sizeof(config_key_pair_t));
 	key_pair->name = xstrdup("ProfileInfluxDBDefault");
-	key_pair->value = xstrdup(acct_gather_profile_to_string(influxdb_conf.def));
+	key_pair->value = 
+		xstrdup(acct_gather_profile_to_string(influxdb_conf.def));
 	list_append(*data, key_pair);
 	return;
 
