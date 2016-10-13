@@ -9,8 +9,6 @@ PLUGIN_FLAGS = -module -avoid-version --export-dynamic
 AM_CPPFLAGS = -I$(top_srcdir)
 
 # cpu/core energy accounting plugin.
-HDF5_SOURCES = acct_gather_profile_hdf5.c
-HDF5_API_SOURCES = hdf5_api.c hdf5_api.h
 
 if WITH_CURL
 pkglib_LTLIBRARIES = acct_gather_profile_influxdb.la
