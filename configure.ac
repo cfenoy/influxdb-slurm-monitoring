@@ -151,10 +151,6 @@ dnl Check for PAM module support
 X_AC_PAM
 
 dnl
-dnl Check to see how we link to libslurm
-X_AC_LIBSLURM
-
-dnl
 dnl Check for ISO compliance
 X_AC_ISO
 
@@ -495,9 +491,9 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/acct_gather_energy/ibmaem/Makefile
 		 src/plugins/acct_gather_energy/ipmi/Makefile
 		 src/plugins/acct_gather_energy/none/Makefile
-		 src/plugins/acct_gather_interconnect/Makefile
-		 src/plugins/acct_gather_interconnect/ofed/Makefile
-		 src/plugins/acct_gather_interconnect/none/Makefile
+		 src/plugins/acct_gather_infiniband/Makefile
+		 src/plugins/acct_gather_infiniband/ofed/Makefile
+		 src/plugins/acct_gather_infiniband/none/Makefile
 		 src/plugins/acct_gather_filesystem/Makefile
 		 src/plugins/acct_gather_filesystem/lustre/Makefile
 		 src/plugins/acct_gather_filesystem/none/Makefile
@@ -647,8 +643,6 @@ AC_CONFIG_FILES([Makefile
 		 testsuite/slurm_unit/api/Makefile
 		 testsuite/slurm_unit/api/manual/Makefile
 		 testsuite/slurm_unit/common/Makefile
-		 testsuite/slurm_unit/common/slurm_protocol_pack/Makefile
-		 testsuite/slurm_unit/common/slurmdb_pack/Makefile
 		 ]
 )
 
